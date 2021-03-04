@@ -35,7 +35,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @IBOutlet weak var detailedStatusMenuItem: NSMenuItem!
     @IBOutlet weak var copyOcLoginCommand: NSMenuItem!
     
-    let statusRefreshRate: TimeInterval = 5 // seconds
     var kubeadminPass: String!
     var apiEndpoint: String!
     var status: String = ""
@@ -65,12 +64,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             notificationAllowed = granted
             print(error?.localizedDescription ?? "Notification Request: No Error")
         })
-        
         DispatchQueue.global(qos: .background).async {
-            self.refreshStatusAndMenu()
+            let status = clusterStatus()
+            self.status = status
+            DispatchQueue.main.async {
+                self.initializeMenus(status: status)
+            }
         }
-        
-        Timer.scheduledTimer(timeInterval: statusRefreshRate, target: self, selector: #selector(refreshStatusAndMenu), userInfo: nil, repeats: true)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -212,15 +212,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     
     func menuWillOpen(_ menu: NSMenu) {
         DispatchQueue.global(qos: .background).async {
-            self.refreshStatusAndMenu()
+            let status = clusterStatus()
+            self.status = status
+            
+            DispatchQueue.main.async {
+                self.initializeMenus(status: status)
+            }
         }
-    }
-    
-    @objc func refreshStatusAndMenu() {
-        let status = clusterStatus()
-        self.status = status
-        DispatchQueue.main.async {
-            self.initializeMenus(status: status)
-        }
+        
     }
 }
